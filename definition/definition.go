@@ -1,29 +1,30 @@
 package definition
 
-type Collection struct {
-	ID			string
-	Name		string
-}
-
 type Item struct {
-	ID			string
-	Name		string
+	ID string
 }
 
-type Dictionary struct {
-	ID			string
-	Name		string
+type Domain struct {
+	ItemList []Item
 }
 
-type Criteria struct {
-	// имя критерия
-	Name				string		`json:"name"`
-	// возможные значения. если пусто - пользователю не дадут выбор
-	Values				[]string	`json:"values"`
-	// выбранное значение. если не пусто - можно выбирать следующие
-	SelectedValue		string		`json:"selected_value"`
-	// т.к. выбирать надо по-очереди, то каждый критерий ссылается на следующий
-	NextCriteria		*Criteria	`json:"next_criteria"`
+type Hash string
+
+type CriteriaMetadata struct {
+	Name  string
+	Order int
+}
+
+type SelectedCriteria struct {
+	Name          string
+	SelectedValue string
+}
+
+type CriteriaForSelection struct {
+	Name              string
+	Order             int
+	SelectionPossible string
+	PossibleValues    []string
 }
 
 type CollectionStorage interface {
@@ -31,9 +32,23 @@ type CollectionStorage interface {
 	GetCollectionDictionary(collectionID string) (string, error)
 }
 
-type DictionaryStorage interface {
-	CreateDictionary(name string) (*Dictionary, error)
-	GetCriteria(dictID string) (*Criteria, error)
-	SetCriteria(dictID string, criteria Criteria) error
-	ClarifyCriteria(c Criteria, dictID string) error
+// хранит домены в конткесте одного справочника
+type DomainService interface {
+	// вернет домен позиции. если позиция еще не состоит в домене - создаст его, добавить туда позицию и вернет
+	GetItemDomain(itemID string) (*Domain, error)
+	MergeItemsDomains(itemID1 string, itemdID2 string) error
+	SetHashToItemDomain(h Hash, itemID string) error
+	GetItemsByHash(h Hash) ([]Item, error)
+}
+
+type Dictionary interface {
+	SetDictionaryCriteria(names []CriteriaMetadata) error
+	SetItemCriteria(itemID string, criteriaValues map[string]string) error
+
+	GetCriteriaMetadataList(colectionID string) ([]CriteriaMetadata, error)
+	GetItemsForSelectedCriteria(criteriaList []SelectedCriteria) ([]Item, error)
+}
+
+type HashGenerator interface {
+	GenerateHash(criteriaValues map[string]string, md []CriteriaMetadata) Hash
 }
